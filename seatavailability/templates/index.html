@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Seat Availability</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f8f9fa;
+            color: #343a40;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            height: 100vh;
+            margin: 0;
+            overflow: hidden;
+            user-select: none;
+        }
+        h1 {
+            font-size: 3em;
+            margin: 0;
+            color: #007bff;
+            text-align: center;
+            width: 100%;
+        }
+        .branch h2 {
+            font-size: 3.5em;
+            margin: 10px 0;
+            color: #86ce12;
+            text-align: center;
+            animation: flipVertical 1s ease; /* Add animation for vertical flip */
+
+        }
+        .total-seats {
+            font-size: 3em;
+            color: #28a745;
+            text-align: center;
+            margin-bottom: 10px;
+            margin-top:10px;
+        }
+        .category-container {
+            display: flex;
+            justify-content: space-around;
+            width: 100%;
+        }
+        .category {
+            display: none;
+            margin: 10px;
+            padding: 20px;
+            border: 1px solid #ced4da;
+            border-radius: 8px;
+            background-color: #fff;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            width: 22%;
+            display: inline-block;
+            vertical-align: top;
+            animation: flipIn 1s ease;
+        }
+        .category h1 {
+            font-size: 3em;
+            margin: 0;
+            text-align: center;
+            color: #17a2b8;
+        }
+        .category h2 {
+            font-size: 5em;
+            margin: 0;
+            color: #dc3545;
+            text-align: center;
+        }
+        .span{
+              color: red;
+              font-weight: bold;
+        }
+        @keyframes flipIn {
+            0% {
+                transform: rotateY(-90deg);
+                opacity: 0;
+            }
+            100% {
+                transform: rotateY(0);
+                opacity: 1;
+            }
+        }
+        @keyframes fadeIn {
+            0% {
+                opacity: 0;
+            }
+            100% {
+                opacity: 1;
+            }
+        }
+        /* new animation for */
+        /* .branch h2 {
+    font-size: 3.5em;
+    margin: 10px 0;
+    color: #4f09f3;
+    text-align: center;
+    animation: flipVertical 1s ease; /* Add animation for vertical flip */
+/* } */ 
+
+@keyframes flipVertical {
+    0% {
+        transform: perspective(400px) rotateX(0deg);
+    }
+    100% {
+        transform: perspective(400px) rotateX(360deg);
+    }
+}
+
+
+    </style>
+</head>
+<body>
+    <h1>Seat Availability</h1>
+    <div id="seat-availability"></div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const timestamp = new Date().getTime(); // Get current timestamp
+            fetch(`/api/seats/?timestamp=${timestamp}`)
+                .then(response => response.json())
+                .then(data => {
+                    const branches = Object.keys(data);
+                    let currentBranchIndex = 0;
+                    let currentCategorySetIndex = 0;
+                    const categoriesPerSet = 4;
+                    const displayDuration = 1500;  // 7500 milliseconds = 7.5 seconds
+                    const container = document.getElementById('seat-availability');
+
+                    const displayCategorySet = () => {
+                        const branch = branches[currentBranchIndex];
+                        const categories = data[branch];
+                        const totalSeats = categories.reduce((sum, category) => sum + category.availability, 0);
+
+                        let categorySetHTML = `<div class="branch">
+                                               <h2>${branch}</h2>
+                                               <div class="total-seats">Total Seats Remaining:<span class="span"> ${totalSeats}</span></div>
+                                               <div class="category-container">`;
+
+                        for (let i = 0; i < categoriesPerSet; i++) {
+                            const categoryIndex = currentCategorySetIndex * categoriesPerSet + i;
+                            if (categoryIndex < categories.length) {
+                                const category = categories[categoryIndex];
+                                categorySetHTML += `<div class="category">
+                                                        <h1>${category.name}</h1>
+                                                        <h2>${category.availability}</h2>
+                                                    </div>`;
+                            }
+                        }
+
+                        categorySetHTML += `</div></div>`;
+                        container.innerHTML = categorySetHTML;
+
+                        currentCategorySetIndex++;
+                        if (currentCategorySetIndex * categoriesPerSet >= categories.length) {
+                            currentCategorySetIndex = 0;
+                            currentBranchIndex = (currentBranchIndex + 1) % branches.length;
+                        }
+                    };
+
+                    // Display the first set of categories immediately
+                    displayCategorySet();
+
+                    // Set up interval to switch category sets every 7.5 seconds
+                    setInterval(displayCategorySet, displayDuration);
+                
+                function refreshPage() {
+                        location.reload(); // Reload the current page
+                    }
+
+                    // Set a timeout to call the refreshPage function after 180 seconds (180000 milliseconds)
+                    setTimeout(refreshPage, 180010);
+                });
+        });
+    </script>
+</body>
+</html>
